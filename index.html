@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline';">
-    <meta name="description" content="Visual Docker-Compose builder for Self-Hosting and HomeLabs. Generate perfect configurations without touching code.">
-    <title>HomeLab Architect | Docker Compose Builder</title>
+    <meta name="description" content="Visual Docker-Compose builder for Self-Hosting and HomeLabs. Generate perfect, secure configurations without touching code.">
+    <title>HomeLab Architect | V2.0 Infrastructure</title>
     
     <style>
         /* --- CSS VARIABLES & THEMING --- */
@@ -26,8 +26,9 @@
             --code-text: #a6accd;
             --code-key: #89ddff;
             --code-string: #c3e88d;
-            --font-main: system-ui, -apple-system, sans-serif;
-            --font-mono: "Fira Code", Consolas, monospace;
+            --code-comment: #64748b;
+            --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: "Fira Code", Consolas, Monaco, monospace;
         }
 
         /* --- RESET & LAYOUT --- */
@@ -38,131 +39,156 @@
             display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
 
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-panel); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
         header {
             background-color: var(--bg-panel); padding: 15px 30px;
             border-bottom: 1px solid var(--border); display: flex;
             justify-content: space-between; align-items: center; flex-shrink: 0;
+            z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        header h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        header h1 { margin: 0; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; font-weight: 800;}
         header h1 span { color: var(--primary); }
-        .header-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+        .header-subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; }
+
+        .header-controls { display: flex; align-items: center; gap: 20px; }
+        .stat-badge { background: var(--bg-card); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 0.9rem; font-weight: bold;}
+        .stat-badge span { color: var(--primary); font-size: 1.1rem;}
 
         /* --- SPLIT PANE LAYOUT --- */
-        .workspace {
-            display: flex; flex: 1; overflow: hidden;
-        }
+        .workspace { display: flex; flex: 1; overflow: hidden; }
         
-        .sidebar {
-            width: 450px; background-color: var(--bg-panel); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-
-        .preview-pane {
-            flex: 1; display: flex; flex-direction: column; background-color: var(--bg-base);
-            position: relative;
-        }
-
         /* --- SIDEBAR COMPONENTS --- */
-        .settings-group {
-            padding: 20px; border-bottom: 1px solid var(--border);
+        .sidebar {
+            width: 480px; background-color: var(--bg-panel); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
         }
-        .settings-group h2 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;}
+
+        .settings-group { padding: 25px 20px; border-bottom: 1px solid var(--border); background: var(--bg-base);}
+        .settings-group h2 { margin: 0 0 15px 0; font-size: 1.1rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
         
-        .input-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .input-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .input-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 0.85rem; color: var(--text-muted); font-weight: bold; }
-        input {
+        input[type="text"] {
             background-color: var(--bg-card); border: 1px solid var(--border);
-            color: var(--text-main); padding: 8px 12px; border-radius: 6px;
-            font-family: var(--font-mono); font-size: 0.9rem; transition: border 0.2s;
+            color: var(--text-main); padding: 10px 12px; border-radius: 6px;
+            font-family: var(--font-mono); font-size: 0.9rem; transition: border 0.2s, box-shadow 0.2s;
         }
-        input:focus { outline: none; border-color: var(--primary); }
+        input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+
+        .search-box {
+            position: sticky; top: 0; background: var(--bg-panel); padding: 15px 20px;
+            border-bottom: 1px solid var(--border); z-index: 15;
+        }
+        .search-input { width: 100%; padding: 12px 15px 12px 35px; border-radius: 8px; font-size: 1rem; border: 2px solid var(--border); background: var(--bg-card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center; color: var(--text-main);}
+        .search-input:focus { border-color: var(--primary); outline: none; }
 
         /* App Selection Library */
         .category-title {
-            padding: 15px 20px 5px 20px; margin: 0; font-size: 1rem; color: var(--primary);
-            font-weight: bold; position: sticky; top: 0; background-color: var(--bg-panel); z-index: 10;
+            padding: 20px 20px 10px 20px; margin: 0; font-size: 1.1rem; color: var(--text-main);
+            font-weight: 800; background-color: var(--bg-panel); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
         }
 
         .app-card {
-            display: flex; align-items: flex-start; gap: 15px; padding: 15px 20px;
-            border-bottom: 1px solid var(--border); transition: background-color 0.2s;
-            cursor: pointer;
+            display: flex; align-items: flex-start; gap: 15px; padding: 18px 20px;
+            border-bottom: 1px solid var(--border); transition: all 0.2s ease;
+            cursor: pointer; background: var(--bg-panel);
         }
         .app-card:hover { background-color: var(--bg-card); }
-        .app-card.selected { border-left: 4px solid var(--success); background-color: rgba(34, 197, 94, 0.05); }
+        .app-card.selected { border-left: 4px solid var(--success); background-color: rgba(34, 197, 94, 0.08); }
 
-        .app-icon { font-size: 2rem; width: 40px; text-align: center; }
+        .app-icon { font-size: 2.2rem; width: 45px; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));}
         .app-info { flex: 1; }
-        .app-title { font-weight: bold; font-size: 1.05rem; margin: 0 0 5px 0; display: flex; justify-content: space-between;}
-        .app-port { font-size: 0.75rem; background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--primary); font-family: var(--font-mono);}
-        .app-desc { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+        .app-title { font-weight: bold; font-size: 1.1rem; margin: 0 0 5px 0; display: flex; justify-content: space-between; align-items: center;}
+        .app-port { font-size: 0.8rem; background: var(--bg-base); padding: 3px 8px; border-radius: 6px; color: var(--primary); font-family: var(--font-mono); border: 1px solid var(--border);}
+        .app-desc { font-size: 0.9rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
         /* Custom Checkbox Switch */
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-top: 5px;}
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; margin-top: 5px; flex-shrink: 0;}
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--border); transition: .4s; border-radius: 20px;
+            background-color: var(--border); transition: .3s; border-radius: 22px;
         }
         .slider:before {
-            position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
-            background-color: white; transition: .4s; border-radius: 50%;
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(22px); }
 
         /* --- PREVIEW PANE COMPONENTS --- */
+        .preview-pane {
+            flex: 1; display: flex; flex-direction: column; background-color: var(--code-bg);
+            position: relative;
+        }
+
         .preview-header {
-            background-color: var(--bg-card); padding: 10px 20px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--bg-card); padding: 12px 25px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; z-index: 5;
         }
-        .preview-title { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-muted); }
+        .preview-title { font-family: var(--font-mono); font-size: 1rem; color: var(--text-main); font-weight: bold; display: flex; gap: 10px; align-items: center;}
+        .network-badge { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 8px; border-radius: 10px; font-weight: normal;}
         
-        .action-btns { display: flex; gap: 10px; }
+        .action-btns { display: flex; gap: 12px; }
         .btn {
-            background-color: var(--primary); color: #fff; border: none; padding: 8px 16px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;
-            display: flex; align-items: center; gap: 6px; font-size: 0.9rem;
+            background-color: var(--primary); color: #fff; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px; font-size: 0.95rem;
         }
-        .btn:hover { background-color: var(--primary-hover); }
-        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-main); }
-        .btn-outline:hover { background-color: var(--border); }
+        .btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);}
+        .btn-outline { background-color: transparent; border: 2px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background-color: var(--bg-panel); border-color: var(--text-muted); }
+        .btn-danger { background-color: transparent; border: 2px solid var(--danger); color: var(--danger); }
+        .btn-danger:hover { background-color: var(--danger); color: #fff; }
 
         .code-container {
-            flex: 1; overflow: auto; padding: 20px; background-color: var(--code-bg);
+            flex: 1; overflow: auto; padding: 25px;
         }
-        pre { margin: 0; font-family: var(--font-mono); font-size: 0.95rem; line-height: 1.5; color: var(--code-text); }
+        pre { margin: 0; font-family: var(--font-mono); font-size: 1rem; line-height: 1.6; color: var(--code-text); tab-size: 2;}
         
         /* Syntax Highlighting */
         .yaml-key { color: var(--danger); }
         .yaml-value { color: var(--code-string); }
-        .yaml-comment { color: var(--text-muted); font-style: italic; }
+        .yaml-comment { color: var(--code-comment); font-style: italic; }
 
-        /* Conflict Warning Banner */
+        /* Conflict Warning Banner (Absolute positioning to drop down gracefully) */
         #conflict-banner {
-            background-color: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger);
-            color: var(--danger); padding: 12px 20px; font-size: 0.9rem; font-weight: bold;
+            position: absolute; top: 70px; left: 480px; right: 0; z-index: 15;
+            background-color: rgba(239, 68, 68, 0.95); backdrop-filter: blur(4px);
+            color: #fff; padding: 15px 25px; font-size: 0.95rem; font-weight: bold;
             display: none; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-bottom: 2px solid #b91c1c;
+            animation: slideDown 0.3s ease-out;
         }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        .conflict-list { font-family: var(--font-mono); font-size: 0.85rem; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 6px; }
 
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <header>
         <div>
-            <h1>🐳 HomeLab <span>Architect</span></h1>
-            <div class="header-subtitle">The visual docker-compose.yml generator for self-hosting.</div>
+            <h1>🐳 HomeLab <span>Architect</span> <span style="font-size: 0.8rem; background: var(--primary); color: #000; padding: 2px 6px; border-radius: 4px; vertical-align: middle;">V2.0</span></h1>
+            <div class="header-subtitle">Enterprise-grade docker-compose.yml generator with Local Storage persistence.</div>
         </div>
-        <div class="header-stats" style="color: var(--text-muted); font-size: 0.9rem;">
-            Services configured: <strong id="service-count" style="color: var(--primary);">0</strong>
+        <div class="header-controls">
+            <button class="btn btn-danger" onclick="clearAll()" title="Reset all settings and selections">🗑️ Clear All</button>
+            <div class="stat-badge">Services: <span id="service-count">0</span></div>
         </div>
     </header>
 
     <div id="conflict-banner">
-        <span>⚠️ <strong>Port Conflict Detected:</strong> Multiple apps are trying to use the same host port!</span>
-        <span id="conflict-details" style="font-family: var(--font-mono); font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;"></span>
+        <span>⚠️ <strong>CRITICAL PORT CONFLICT DETECTED:</strong> Multiple containers are attempting to bind to the same host port. Deployment will fail!</span>
+        <span id="conflict-details" class="conflict-list"></span>
     </div>
 
     <div class="workspace">
@@ -171,24 +197,28 @@
             
             <div class="settings-group">
                 <h2>⚙️ Global Environment</h2>
-                <div class="input-col" style="margin-bottom: 12px;">
-                    <label title="The main folder on your host machine where all app data will be saved.">Root Data Directory</label>
-                    <input type="text" id="global-dir" value="/opt/homelab" oninput="generateYAML()">
+                <div class="input-col" style="margin-bottom: 15px;">
+                    <label title="The main absolute path on your host machine where all app configurations will be saved.">Root Data Directory (Absolute Path)</label>
+                    <input type="text" id="global-dir" value="/opt/homelab" oninput="debounceSaveAndGenerate()">
                 </div>
                 <div class="input-row">
                     <div class="input-col">
-                        <label title="Timezone">Timezone (TZ)</label>
-                        <input type="text" id="global-tz" value="Europe/Berlin" oninput="generateYAML()">
+                        <label title="Your server's timezone">Timezone (TZ)</label>
+                        <input type="text" id="global-tz" value="Europe/Berlin" oninput="debounceSaveAndGenerate()">
                     </div>
                     <div class="input-col">
-                        <label title="User ID - usually 1000 for the main user">PUID</label>
-                        <input type="text" id="global-puid" value="1000" oninput="generateYAML()">
+                        <label title="Process User ID - usually 1000 for the main non-root user">PUID</label>
+                        <input type="text" id="global-puid" value="1000" oninput="debounceSaveAndGenerate()">
                     </div>
                     <div class="input-col">
-                        <label title="Group ID - usually 1000">PGID</label>
-                        <input type="text" id="global-pgid" value="1000" oninput="generateYAML()">
+                        <label title="Process Group ID - usually 1000">PGID</label>
+                        <input type="text" id="global-pgid" value="1000" oninput="debounceSaveAndGenerate()">
                     </div>
                 </div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="search-input" class="search-input" placeholder="Search for apps (e.g. Nextcloud, DNS, Media)..." onkeyup="filterApps()">
             </div>
 
             <div id="app-library"></div>
@@ -197,36 +227,43 @@
 
         <main class="preview-pane">
             <div class="preview-header">
-                <div class="preview-title">📄 docker-compose.yml</div>
+                <div class="preview-title">
+                    📄 docker-compose.yml 
+                    <span class="network-badge">Network: homelab_net</span>
+                </div>
                 <div class="action-btns">
-                    <button class="btn btn-outline" onclick="copyToClipboard()" id="copy-btn">📋 Copy</button>
+                    <button class="btn btn-outline" onclick="copyToClipboard()" id="copy-btn">📋 Copy Code</button>
                     <button class="btn" onclick="downloadYAML()">⬇️ Download .yml</button>
                 </div>
             </div>
             <div class="code-container">
-                <pre><code id="yaml-output"># Select apps from the sidebar to start building...</code></pre>
+                <pre><code id="yaml-output"># Loading your secure infrastructure...</code></pre>
             </div>
         </main>
 
     </div>
 
     <script>
-        // --- 1. THE APP LIBRARY (DATABASE) ---
-        // This holds all the logic and configurations for the apps.
+        // --- 1. THE MASSIVE APP LIBRARY (DATABASE V2.0) ---
+        // Expanded to 22+ Gold Standard HomeLab applications.
         const apps = [
+            // ==========================================
             // CATEGORY: NETWORKING & SECURITY
+            // ==========================================
             {
                 id: 'npm',
                 category: 'Networking & Security',
                 name: 'Nginx Proxy Manager',
                 icon: '🛡️',
-                desc: 'Easily expose your services to the web securely with SSL certificates.',
+                desc: 'Easily expose your services to the web securely with automated Let\'s Encrypt SSL certificates.',
                 ports: [80, 443, 81],
                 getYaml: (cfg) => `
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
     restart: unless-stopped
+    networks:
+      - homelab_net
     ports:
       - "80:80"       # Public HTTP
       - "81:81"       # Admin Web UI
@@ -236,24 +273,56 @@
       - ${cfg.dir}/npm/letsencrypt:/etc/letsencrypt`
             },
             {
+                id: 'traefik',
+                category: 'Networking & Security',
+                name: 'Traefik (Reverse Proxy)',
+                icon: '🚦',
+                desc: 'Advanced, modern HTTP reverse proxy and load balancer that integrates directly with Docker labels.',
+                ports: [80, 443, 8080],
+                getYaml: (cfg) => `
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - homelab_net
+    ports:
+      - "80:80"       # HTTP (Warning: Conflicts with NPM)
+      - "443:443"     # HTTPS
+      - "8080:8080"   # Dashboard (Warning: Conflicts with Nextcloud default)
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${cfg.dir}/traefik/acme.json:/acme.json`
+            },
+            {
                 id: 'pihole',
                 category: 'Networking & Security',
                 name: 'Pi-hole',
                 icon: '🕳️',
-                desc: 'Network-wide ad blocking via your own DNS server.',
+                desc: 'Network-wide ad blocking via your own DNS server. Protects every device in your house.',
                 ports: [53, 80],
                 getYaml: (cfg) => `
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
     restart: unless-stopped
+    networks:
+      - homelab_net
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "80:80"       # Admin Web UI (Warning: Conflicts with NPM)
+      - "80:80"       # Admin Web UI (Warning: Conflicts with Reverse Proxies!)
     environment:
       TZ: '${cfg.tz}'
-      WEBPASSWORD: 'changeme123' # Change this!
+      WEBPASSWORD: 'changeme123' # Security: Change this immediately!
     volumes:
       - ${cfg.dir}/pihole/etc-pihole:/etc/pihole
       - ${cfg.dir}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d`
@@ -263,7 +332,7 @@
                 category: 'Networking & Security',
                 name: 'Wireguard (VPN)',
                 icon: '🔐',
-                desc: 'Fast, modern, secure VPN tunnel to access your HomeLab from anywhere.',
+                desc: 'Fast, modern, secure VPN tunnel to access your HomeLab safely from public Wi-Fi.',
                 ports: [51820],
                 getYaml: (cfg) => `
   wireguard:
@@ -272,12 +341,14 @@
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
+    networks:
+      - homelab_net
     environment:
       - PUID=${cfg.puid}
       - PGID=${cfg.pgid}
       - TZ=${cfg.tz}
       - SERVERURL=auto # Set your public IP or DDNS here
-      - PEERS=1 # Number of clients to generate
+      - PEERS=1 # Number of client configs to generate
     volumes:
       - ${cfg.dir}/wireguard/config:/config
       - /lib/modules:/lib/modules
@@ -288,13 +359,171 @@
     restart: unless-stopped`
             },
 
-            // CATEGORY: MEDIA & ENTERTAINMENT
+            // ==========================================
+            // CATEGORY: SMART HOME
+            // ==========================================
+            {
+                id: 'homeassistant',
+                category: 'Smart Home',
+                name: 'Home Assistant',
+                icon: '🏡',
+                desc: 'Open source home automation that puts local control and privacy first.',
+                ports: [8123],
+                getYaml: (cfg) => `
+  homeassistant:
+    image: lscr.io/linuxserver/homeassistant:latest
+    container_name: homeassistant
+    network_mode: host # Home Assistant requires host networking for auto-discovery
+    environment:
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+    volumes:
+      - ${cfg.dir}/homeassistant/config:/config
+    restart: unless-stopped`
+            },
+            {
+                id: 'mosquitto',
+                category: 'Smart Home',
+                name: 'Eclipse Mosquitto (MQTT)',
+                icon: '📫',
+                desc: 'Lightweight message broker. Essential for IoT devices talking to Home Assistant.',
+                ports: [1883, 9001],
+                getYaml: (cfg) => `
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: unless-stopped
+    networks:
+      - homelab_net
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ${cfg.dir}/mosquitto/config:/mosquitto/config
+      - ${cfg.dir}/mosquitto/data:/mosquitto/data
+      - ${cfg.dir}/mosquitto/log:/mosquitto/log`
+            },
+
+            // ==========================================
+            // CATEGORY: THE "ARR" STACK (MEDIA AUTOMATION)
+            // ==========================================
+            {
+                id: 'sonarr',
+                category: 'Media Automation (Arr Stack)',
+                name: 'Sonarr',
+                icon: '📺',
+                desc: 'Smart PVR for newsgroup and bittorrent users. Automatically downloads TV shows.',
+                ports: [8989],
+                getYaml: (cfg) => `
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+    volumes:
+      - ${cfg.dir}/sonarr/config:/config
+      - ${cfg.dir}/media/tvshows:/tv # Your media folder
+      - ${cfg.dir}/downloads:/downloads # Must match torrent client path!
+    ports:
+      - "8989:8989"
+    networks:
+      - homelab_net
+    restart: unless-stopped`
+            },
+            {
+                id: 'radarr',
+                category: 'Media Automation (Arr Stack)',
+                name: 'Radarr',
+                icon: '🎬',
+                desc: 'A fork of Sonarr tailored for movies. Automates your movie collection.',
+                ports: [7878],
+                getYaml: (cfg) => `
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+    volumes:
+      - ${cfg.dir}/radarr/config:/config
+      - ${cfg.dir}/media/movies:/movies # Your media folder
+      - ${cfg.dir}/downloads:/downloads
+    ports:
+      - "7878:7878"
+    networks:
+      - homelab_net
+    restart: unless-stopped`
+            },
+            {
+                id: 'prowlarr',
+                category: 'Media Automation (Arr Stack)',
+                name: 'Prowlarr',
+                icon: '🔍',
+                desc: 'Indexer manager/proxy for Torrent trackers. Syncs seamlessly with Sonarr/Radarr.',
+                ports: [9696],
+                getYaml: (cfg) => `
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+    volumes:
+      - ${cfg.dir}/prowlarr/config:/config
+    ports:
+      - "9696:9696"
+    networks:
+      - homelab_net
+    restart: unless-stopped`
+            },
+            {
+                id: 'transmission',
+                category: 'Media Automation (Arr Stack)',
+                name: 'Transmission (with OpenVPN)',
+                icon: '⬇️',
+                desc: 'Lightweight BitTorrent client. Crucial: This image forces all traffic through a VPN.',
+                ports: [9091],
+                getYaml: (cfg) => `
+  transmission-vpn:
+    image: haugene/transmission-openvpn:latest
+    container_name: transmission-vpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    restart: unless-stopped
+    ports:
+      - "9091:9091" # Web UI
+    networks:
+      - homelab_net
+    environment:
+      - OPENVPN_PROVIDER=CUSTOM # Change to your provider (e.g., NORDVPN, PIA)
+      - OPENVPN_CONFIG=default
+      - OPENVPN_USERNAME=user
+      - OPENVPN_PASSWORD=pass
+      - LOCAL_NETWORK=192.168.1.0/24 # Change to your subnet!
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+    volumes:
+      - ${cfg.dir}/transmission/data:/data
+      - ${cfg.dir}/downloads:/data/completed`
+            },
+
+            // ==========================================
+            // CATEGORY: MEDIA PLAYBACK
+            // ==========================================
             {
                 id: 'jellyfin',
-                category: 'Media & Entertainment',
+                category: 'Media Playback',
                 name: 'Jellyfin',
                 icon: '🍿',
-                desc: 'The Free Software Media System. Stream your local movies and shows. No tracking.',
+                desc: 'The Free Software Media System. Stream your local movies and shows. Zero tracking, completely free.',
                 ports: [8096],
                 getYaml: (cfg) => `
   jellyfin:
@@ -304,43 +533,29 @@
       - PUID=${cfg.puid}
       - PGID=${cfg.pgid}
       - TZ=${cfg.tz}
+      - JELLYFIN_PublishedServerUrl=192.168.1.X # Optional
     volumes:
       - ${cfg.dir}/jellyfin/config:/config
       - ${cfg.dir}/media/tvshows:/data/tvshows
       - ${cfg.dir}/media/movies:/data/movies
     ports:
       - "8096:8096"
-    restart: unless-stopped`
-            },
-            {
-                id: 'navidrome',
-                category: 'Media & Entertainment',
-                name: 'Navidrome',
-                icon: '🎧',
-                desc: 'Modern Music Server and Streamer compatible with Subsonic/Airsonic.',
-                ports: [4533],
-                getYaml: (cfg) => `
-  navidrome:
-    image: deluan/navidrome:latest
-    container_name: navidrome
-    user: ${cfg.puid}:${cfg.pgid}
-    ports:
-      - "4533:4533"
-    environment:
-      ND_LOGLEVEL: info
-    volumes:
-      - ${cfg.dir}/navidrome/data:/data
-      - ${cfg.dir}/media/music:/music:ro
+    networks:
+      - homelab_net
+    # devices:
+      # - /dev/dri:/dev/dri # Uncomment for Intel Hardware Transcoding!
     restart: unless-stopped`
             },
 
+            // ==========================================
             // CATEGORY: PRODUCTIVITY & CLOUD
+            // ==========================================
             {
                 id: 'nextcloud',
                 category: 'Productivity & Cloud',
-                name: 'Nextcloud (AIO)',
+                name: 'Nextcloud',
                 icon: '☁️',
-                desc: 'Your private Google Drive replacement. Sync files, contacts, and calendars.',
+                desc: 'Your private Google Drive replacement. Sync files, contacts, and calendars across devices.',
                 ports: [8080],
                 getYaml: (cfg) => `
   nextcloud:
@@ -354,7 +569,9 @@
       - ${cfg.dir}/nextcloud/appdata:/config
       - ${cfg.dir}/nextcloud/data:/data
     ports:
-      - "8080:443" # Exposing on 8080 to avoid port 80/443 conflicts
+      - "8080:443" # Exposing HTTPS internally on 8080 to avoid conflicts
+    networks:
+      - homelab_net
     restart: unless-stopped`
             },
             {
@@ -362,7 +579,7 @@
                 category: 'Productivity & Cloud',
                 name: 'Vaultwarden',
                 icon: '🗝️',
-                desc: 'Self-hosted Bitwarden password manager API. Extremely lightweight.',
+                desc: 'Self-hosted Bitwarden password manager API. Extremely lightweight Rust implementation.',
                 ports: [8000],
                 getYaml: (cfg) => `
   vaultwarden:
@@ -370,57 +587,81 @@
     container_name: vaultwarden
     environment:
       - WEBSOCKET_ENABLED=true
-      - SIGNUPS_ALLOWED=false # Set to true to create your first account, then disable!
+      - SIGNUPS_ALLOWED=false # Security: Set to true to create your first account, then disable!
     volumes:
       - ${cfg.dir}/vaultwarden/data:/vw-data
     ports:
       - "8000:80"
+    networks:
+      - homelab_net
+    restart: unless-stopped`
+            },
+
+            // ==========================================
+            // CATEGORY: DATABASES
+            // ==========================================
+            {
+                id: 'mariadb',
+                category: 'Databases',
+                name: 'MariaDB',
+                icon: '🐬',
+                desc: 'One of the most popular open source relational databases. Fork of MySQL. Required by many self-hosted apps.',
+                ports: [3306],
+                getYaml: (cfg) => `
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    environment:
+      - PUID=${cfg.puid}
+      - PGID=${cfg.pgid}
+      - TZ=${cfg.tz}
+      - MYSQL_ROOT_PASSWORD=supersecret_root_pass
+      - MYSQL_DATABASE=homelab_db
+      - MYSQL_USER=homelab_user
+      - MYSQL_PASSWORD=supersecret_pass
+    volumes:
+      - ${cfg.dir}/mariadb/config:/config
+    ports:
+      - "3306:3306" # Warning: Only expose this if you need external access. Otherwise remove the ports block.
+    networks:
+      - homelab_net
     restart: unless-stopped`
             },
             {
-                id: 'paperless',
-                category: 'Productivity & Cloud',
-                name: 'Paperless-ngx',
-                icon: '📄',
-                desc: 'Scan, index and archive all your physical documents. Uses Redis DB under the hood.',
-                ports: [8001],
+                id: 'postgres',
+                category: 'Databases',
+                name: 'PostgreSQL',
+                icon: '🐘',
+                desc: 'Advanced, enterprise-class open source relational database.',
+                ports: [5432],
                 getYaml: (cfg) => `
-  # Paperless requires a Broker (Redis)
-  broker:
-    image: docker.io/library/redis:7
-    container_name: paperless-redis
-    restart: unless-stopped
-    volumes:
-      - ${cfg.dir}/paperless/redisdata:/data
-
-  paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
-    container_name: paperless
-    restart: unless-stopped
-    depends_on:
-      - broker
-    ports:
-      - "8001:8000"
+  postgres:
+    image: postgres:15
+    container_name: postgres
     environment:
-      PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_TIME_ZONE: ${cfg.tz}
-      USERMAP_UID: ${cfg.puid}
-      USERMAP_GID: ${cfg.pgid}
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=supersecret
+      - POSTGRES_DB=homelab
+      - TZ=${cfg.tz}
     volumes:
-      - ${cfg.dir}/paperless/data:/usr/src/paperless/data
-      - ${cfg.dir}/paperless/media:/usr/src/paperless/media
-      - ${cfg.dir}/paperless/export:/usr/src/paperless/export
-      - ${cfg.dir}/paperless/consume:/usr/src/paperless/consume`
+      - ${cfg.dir}/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - homelab_net
+    restart: unless-stopped`
             },
 
+            // ==========================================
             // CATEGORY: MONITORING & MANAGEMENT
+            // ==========================================
             {
                 id: 'portainer',
                 category: 'Monitoring & Management',
                 name: 'Portainer CE',
                 icon: '🚢',
-                desc: 'Powerful GUI to manage your Docker containers and volumes visually.',
-                ports: [9000],
+                desc: 'Powerful GUI to manage your Docker containers, networks, and volumes visually.',
+                ports: [9000, 9443],
                 getYaml: (cfg) => `
   portainer:
     image: portainer/portainer-ce:latest
@@ -428,66 +669,158 @@
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    networks:
+      - homelab_net
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${cfg.dir}/portainer/data:/data
     ports:
-      - "9000:9000"`
+      - "9000:9000" # HTTP
+      - "9443:9443" # HTTPS`
             },
             {
                 id: 'uptimekuma',
                 category: 'Monitoring & Management',
                 name: 'Uptime Kuma',
                 icon: '📈',
-                desc: 'A fancy self-hosted monitoring tool. Tells you when your services go down.',
+                desc: 'A fancy self-hosted monitoring tool. Sends you Telegram/Discord alerts when your server goes down.',
                 ports: [3001],
                 getYaml: (cfg) => `
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
+    networks:
+      - homelab_net
     volumes:
       - ${cfg.dir}/uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock # Optional: For monitoring local docker containers
     ports:
       - "3001:3001"
     restart: unless-stopped`
             },
             {
-                id: 'homer',
+                id: 'grafana',
                 category: 'Monitoring & Management',
-                name: 'Homer (Dashboard)',
-                icon: '🏠',
-                desc: 'A very simple static homepage for your server to organize all your links.',
-                ports: [8085],
+                name: 'Grafana',
+                icon: '📊',
+                desc: 'The open observability platform. Build beautiful dashboards for your server hardware stats.',
+                ports: [3000],
                 getYaml: (cfg) => `
-  homer:
-    image: b4bz/homer
-    container_name: homer
-    volumes:
-      - ${cfg.dir}/homer/assets:/www/assets
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      - homelab_net
     ports:
-      - "8085:8080"
+      - "3000:3000"
+    user: "${cfg.puid}"
     environment:
-      - UID=${cfg.puid}
-      - GID=${cfg.pgid}
-    restart: unless-stopped`
+      - GF_SECURITY_ADMIN_PASSWORD=admin # Change on first login
+    volumes:
+      - ${cfg.dir}/grafana/data:/var/lib/grafana`
             }
         ];
 
-        // --- 2. STATE MANAGEMENT ---
+        // --- 2. STATE MANAGEMENT & LOCAL STORAGE ---
+        const STORAGE_KEY = 'homelab_architect_v2_state';
         let selectedApps = new Set();
 
-        // --- 3. UI GENERATION ---
-        function renderSidebar() {
+        function saveState() {
+            const state = {
+                dir: document.getElementById('global-dir').value,
+                tz: document.getElementById('global-tz').value,
+                puid: document.getElementById('global-puid').value,
+                pgid: document.getElementById('global-pgid').value,
+                apps: Array.from(selectedApps)
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if(state.dir) document.getElementById('global-dir').value = state.dir;
+                    if(state.tz) document.getElementById('global-tz').value = state.tz;
+                    if(state.puid) document.getElementById('global-puid').value = state.puid;
+                    if(state.pgid) document.getElementById('global-pgid').value = state.pgid;
+                    
+                    if(state.apps && Array.isArray(state.apps)) {
+                        state.apps.forEach(appId => {
+                            // Only add if app still exists in database
+                            if(apps.find(a => a.id === appId)) {
+                                selectedApps.add(appId);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load state from LocalStorage", e);
+            }
+        }
+
+        function clearAll() {
+            if(confirm("Are you sure you want to clear all settings and selections? This cannot be undone.")) {
+                localStorage.removeItem(STORAGE_KEY);
+                selectedApps.clear();
+                
+                // Reset to defaults
+                document.getElementById('global-dir').value = "/opt/homelab";
+                document.getElementById('global-tz').value = "Europe/Berlin";
+                document.getElementById('global-puid').value = "1000";
+                document.getElementById('global-pgid').value = "1000";
+                
+                // Uncheck all UI boxes
+                document.querySelectorAll('.app-card input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                document.querySelectorAll('.app-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                document.getElementById('service-count').innerText = "0";
+                generateYAML();
+            }
+        }
+
+        // Debounce wrapper for input fields to prevent excessive saving/rendering
+        let timeoutId;
+        function debounceSaveAndGenerate() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                saveState();
+                generateYAML();
+            }, 300);
+        }
+
+        // --- 3. UI GENERATION & FILTERING ---
+        function renderSidebar(filterText = "") {
             const library = document.getElementById('app-library');
             library.innerHTML = '';
+
+            const lowerFilter = filterText.toLowerCase();
 
             // Group apps by category
             const categories = {};
             apps.forEach(app => {
+                // Apply Search Filter
+                if (filterText && !app.name.toLowerCase().includes(lowerFilter) && 
+                    !app.desc.toLowerCase().includes(lowerFilter) &&
+                    !app.category.toLowerCase().includes(lowerFilter)) {
+                    return; // Skip if it doesn't match search
+                }
+
                 if (!categories[app.category]) categories[app.category] = [];
                 categories[app.category].push(app);
             });
+
+            if(Object.keys(categories).length === 0) {
+                library.innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">No apps found matching "${filterText}".</div>`;
+                return;
+            }
 
             // Render categories and apps
             for (const [catName, catApps] of Object.entries(categories)) {
@@ -497,11 +830,13 @@
                 library.appendChild(catHeader);
 
                 catApps.forEach(app => {
+                    const isSelected = selectedApps.has(app.id);
                     const card = document.createElement('div');
-                    card.className = 'app-card';
+                    card.className = `app-card ${isSelected ? 'selected' : ''}`;
                     card.id = `card-${app.id}`;
+                    
+                    // Allow clicking anywhere on the card to toggle
                     card.onclick = (e) => {
-                        // Prevent double-toggling if they click the actual switch
                         if(e.target.tagName === 'INPUT' || e.target.className === 'slider') return;
                         const checkbox = document.getElementById(`cb-${app.id}`);
                         checkbox.checked = !checkbox.checked;
@@ -513,18 +848,23 @@
                         <div class="app-info">
                             <div class="app-title">
                                 <span>${app.name}</span>
-                                <span class="app-port">Port: ${app.ports.join(', ')}</span>
+                                <span class="app-port">Ports: ${app.ports.join(', ')}</span>
                             </div>
                             <p class="app-desc">${app.desc}</p>
                         </div>
                         <label class="switch">
-                            <input type="checkbox" id="cb-${app.id}" onchange="toggleApp('${app.id}', this.checked)">
+                            <input type="checkbox" id="cb-${app.id}" ${isSelected ? 'checked' : ''} onchange="toggleApp('${app.id}', this.checked)">
                             <span class="slider"></span>
                         </label>
                     `;
                     library.appendChild(card);
                 });
             }
+        }
+
+        function filterApps() {
+            const val = document.getElementById('search-input').value;
+            renderSidebar(val);
         }
 
         // --- 4. CORE LOGIC: YAML GENERATION & CONFLICT DETECTION ---
@@ -537,9 +877,8 @@
                 document.getElementById(`card-${appId}`).classList.remove('selected');
             }
             
-            // Update counter
             document.getElementById('service-count').innerText = selectedApps.size;
-            
+            saveState();
             generateYAML();
         }
 
@@ -547,12 +886,12 @@
             const usedPorts = {};
             const conflicts = [];
 
-            // Scan all selected apps
             selectedApps.forEach(appId => {
                 const app = apps.find(a => a.id === appId);
+                // In V2, we assume app.ports maps to external host ports.
                 app.ports.forEach(port => {
                     if (usedPorts[port]) {
-                        conflicts.push(`Port <b>${port}</b> is requested by both <b>${usedPorts[port]}</b> and <b>${app.name}</b>.`);
+                        conflicts.push(`Port <b>${port}</b> requested by both <b>${usedPorts[port]}</b> & <b>${app.name}</b>`);
                     } else {
                         usedPorts[port] = app.name;
                     }
@@ -564,29 +903,27 @@
 
             if (conflicts.length > 0) {
                 banner.style.display = 'flex';
-                details.innerHTML = conflicts.join(' | ');
+                details.innerHTML = conflicts.join('<br>');
             } else {
                 banner.style.display = 'none';
             }
         }
 
         function generateYAML() {
-            // 1. Get Global Config
             const config = {
-                dir: document.getElementById('global-dir').value || './data',
+                dir: document.getElementById('global-dir').value || '/opt/homelab',
                 tz: document.getElementById('global-tz').value || 'UTC',
                 puid: document.getElementById('global-puid').value || '1000',
                 pgid: document.getElementById('global-pgid').value || '1000'
             };
 
-            // 2. Check for port conflicts before rendering
             checkPortConflicts();
 
-            // 3. Build the YAML string
             let yaml = `# =========================================================================
-# 🐳 Generated by HomeLab Architect
+# 🐳 Generated by HomeLab Architect V2.0
 # 📅 ${new Date().toLocaleString()}
-# ⚠️ Warning: Review passwords and paths before running 'docker-compose up -d'
+# 🔒 Local Storage Persistence Active
+# ⚠️ Warning: Review passwords (DB, Pi-Hole, etc.) before deployment!
 # =========================================================================
 
 version: '3.8'
@@ -594,26 +931,30 @@ version: '3.8'
 services:`;
 
             if (selectedApps.size === 0) {
-                yaml = `# Select apps from the sidebar to start building your HomeLab...\n# The services will automatically appear here.`;
+                yaml = `# Choose your services from the library on the left.
+# Your configuration will be dynamically generated and securely saved in your browser.`;
             } else {
-                // Fetch YAML blocks for selected apps
                 selectedApps.forEach(appId => {
                     const app = apps.find(a => a.id === appId);
                     yaml += app.getYaml(config);
-                    yaml += '\n'; // Add spacing between services
+                    yaml += '\n'; 
                 });
 
-                // Add standard network block if needed (for V1 we rely on default bridge)
-                yaml += `\n# Note: Services use the default docker bridge network. 
-# They can communicate with each other using their container_name.`;
+                // V2.0 Feature: Custom Networks Generation
+                yaml += `
+# =========================================================================
+# 🌐 Custom Docker Network (Enterprise Best Practice)
+# =========================================================================
+networks:
+  homelab_net:
+    name: homelab_net
+    driver: bridge`;
             }
 
-            // 4. Apply Syntax Highlighting and Render
             document.getElementById('yaml-output').innerHTML = applySyntaxHighlighting(yaml);
         }
 
         function applySyntaxHighlighting(text) {
-            // Extremely basic, fast regex-based highlighter for YAML
             return text
                 .replace(/</g, "&lt;").replace(/>/g, "&gt;") // Escape HTML
                 .replace(/^(#.*)$/gm, '<span class="yaml-comment">$1</span>') // Comments
@@ -630,21 +971,23 @@ services:`;
             navigator.clipboard.writeText(code).then(() => {
                 const btn = document.getElementById('copy-btn');
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ Copied!';
+                btn.innerHTML = '✅ Copied to Clipboard!';
                 btn.style.backgroundColor = 'var(--success)';
                 btn.style.color = '#000';
+                btn.style.borderColor = 'var(--success)';
                 
                 setTimeout(() => {
                     btn.innerHTML = originalText;
                     btn.style.backgroundColor = 'transparent';
                     btn.style.color = 'var(--text-main)';
+                    btn.style.borderColor = 'var(--border)';
                 }, 2000);
             });
         }
 
         function downloadYAML() {
             if (selectedApps.size === 0) {
-                alert("Please select at least one app before downloading.");
+                alert("Please select at least one application before downloading the configuration.");
                 return;
             }
             const code = document.getElementById('yaml-output').innerText;
@@ -662,6 +1005,8 @@ services:`;
 
         // --- INITIALIZATION ---
         window.onload = () => {
+            loadState(); // Restore user's previous session securely
+            document.getElementById('service-count').innerText = selectedApps.size;
             renderSidebar();
             generateYAML();
         };
